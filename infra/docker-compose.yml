@@ -1,0 +1,47 @@
+# Cowrie SSH/Telnet honeypot.
+# Run from /opt/honeypot:  sudo docker compose -f infra/docker-compose.yml up -d
+#
+# Lessons applied from other public honeypot projects:
+#  - log volume path inside the image is /cowrie/cowrie-git/var/... (not /cowrie/var/...)
+#  - Docker's own container logs are size-limited so they can never fill the disk
+#  - fixed subnet so infra/egress-firewall.sh can restrict what the container can reach
+services:
+  cowrie:
+    image: cowrie/cowrie:latest      # after it works, pin the exact version: docker inspect cowrie | grep -i version
+    container_name: cowrie
+    restart: unless-stopped
+    ports:
+      - "22:2222"    # SSH    (real SSH was moved to port 22222)
+      - "23:2223"    # Telnet (IoT botnets love Telnet)
+    environment:
+      # Any cowrie.cfg option can be set as COWRIE_<SECTION>_<OPTION>
+      - COWRIE_TELNET_ENABLED=yes
+      - COWRIE_HONEYPOT_HOSTNAME=web-prod-02   # default "svr04" is a well-known honeypot fingerprint
+      - COWRIE_HONEYPOT_DOWNLOAD_LIMIT_SIZE=10485760   # max 10 MB per captured file (protects the disk)
+    volumes:
+      - ../data/cowrie/log:/cowrie/cowrie-git/var/log/cowrie
+      - ../data/cowrie/downloads:/cowrie/cowrie-git/var/lib/cowrie/downloads
+      - ../data/cowrie/tty:/cowrie/cowrie-git/var/lib/cowrie/tty
+    # Container hardening (same as Cowrie's official compose file)
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    mem_limit: 400m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - honeynet
+
+networks:
+  honeynet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

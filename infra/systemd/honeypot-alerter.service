@@ -1,0 +1,24 @@
+[Unit]
+Description=Honeypot Telegram alerter (malware + suspicious commands)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/opt/honeypot/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=ALERT_STATE_DIR=/var/lib/honeypot-alerter
+ExecStart=/usr/bin/python3 /opt/honeypot/scripts/telegram_alerter.py
+Restart=always
+RestartSec=10
+
+# Run as a throw-away unprivileged user with a read-only view of the system
+DynamicUser=yes
+StateDirectory=honeypot-alerter
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

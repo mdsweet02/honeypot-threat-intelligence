@@ -1,0 +1,29 @@
+title: Shell History Cleared by Attacker
+id: 7b1e2a3c-4d5e-4f60-8a71-9b2c3d4e5f04
+status: experimental
+description: |
+  Attacker tries to hide what they did by clearing bash history.
+  Kibana KQL equivalent:
+    eventid:"cowrie.command.input" and (input:*"history -c"* or input:*HISTFILE* or input:*.bash_history*)
+references:
+  - https://attack.mitre.org/techniques/T1070/003/
+author: Madina Zhakina
+date: 2026-11-08
+tags:
+  - attack.defense_evasion
+  - attack.t1070.003
+logsource:
+  product: cowrie
+  service: honeypot
+detection:
+  selection:
+    eventid: cowrie.command.input
+    input|contains:
+      - 'history -c'
+      - 'unset HISTFILE'
+      - 'HISTFILE=/dev/null'
+      - '.bash_history'
+  condition: selection
+falsepositives:
+  - Rare admin hygiene
+level: medium

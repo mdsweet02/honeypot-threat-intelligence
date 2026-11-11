@@ -1,0 +1,12 @@
+[Unit]
+Description=Honeypot egress firewall (restrict Cowrie container outbound traffic)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/honeypot/infra/egress-firewall.sh
+
+[Install]
+WantedBy=multi-user.target

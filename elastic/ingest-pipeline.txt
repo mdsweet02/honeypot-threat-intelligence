@@ -1,0 +1,27 @@
+# Paste this whole block into Kibana -> Dev Tools -> Console and press the ▶ button.
+# It runs on every Cowrie event as it arrives in Elastic:
+#   - uses Cowrie's own timestamp as @timestamp
+#   - copies src_ip to the standard ECS field source.ip
+#   - adds country/city/coordinates (source.geo.*) and ASN/ISP (source.as.*)
+#     using the GeoLite2 databases that ship with Elasticsearch
+
+PUT _ingest/pipeline/cowrie
+{
+  "description": "Cowrie honeypot: timestamp, source.ip, GeoIP, ASN",
+  "processors": [
+    { "date":   { "field": "timestamp", "formats": ["ISO8601"], "target_field": "@timestamp", "ignore_failure": true } },
+    { "set":    { "field": "source.ip", "copy_from": "src_ip", "ignore_empty_value": true } },
+    { "geoip":  { "field": "src_ip", "target_field": "source.geo", "ignore_missing": true } },
+    { "geoip":  { "field": "src_ip", "target_field": "source.as", "database_file": "GeoLite2-ASN.mmdb",
+                  "properties": ["asn", "organization_name"], "ignore_missing": true } },
+    { "rename": { "field": "source.as.asn", "target_field": "source.as.number", "ignore_missing": true } },
+    { "rename": { "field": "source.as.organization_name", "target_field": "source.as.organization.name", "ignore_missing": true } }
+  ]
+}
+
+# Test it (should return geo + AS fields for 8.8.8.8):
+POST _ingest/pipeline/cowrie/_simulate
+{
+  "docs": [ { "_source": { "src_ip": "8.8.8.8", "timestamp": "2026-11-08T10:00:00.000000Z",
+                           "eventid": "cowrie.login.failed", "username": "root", "password": "123456" } } ]
+}

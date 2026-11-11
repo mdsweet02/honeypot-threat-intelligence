@@ -1,0 +1,37 @@
+# Filebeat -> Elastic Cloud. Copy to /etc/filebeat/filebeat.yml (see docs/03-elastic-cloud-setup.md)
+# Secrets are NOT in this file: ES_HOST and ES_API_KEY come from the Filebeat keystore.
+
+filebeat.inputs:
+  - type: filestream
+    id: cowrie-json
+    paths:
+      - /opt/honeypot/data/cowrie/log/cowrie.json*
+    prospector.scanner.exclude_files: ['\.gz$']
+    parsers:
+      - ndjson:
+          target: ""            # put Cowrie fields (src_ip, username, input ...) at the top level
+          overwrite_keys: true
+          add_error_key: true
+    tags: ["cowrie", "honeypot"]
+
+output.elasticsearch:
+  hosts: ["${ES_HOST}"]
+  api_key: "${ES_API_KEY}"
+  pipeline: cowrie               # ingest pipeline from elastic/ingest-pipeline.txt (GeoIP, ASN, timestamp)
+
+# Keep the 1 GB droplet happy
+queue.mem:
+  events: 2048
+  flush.min_events: 512
+  flush.timeout: 5s
+
+processors:
+  - drop_fields:
+      fields: ["agent.ephemeral_id", "agent.id", "ecs.version", "input.type", "log.offset"]
+      ignore_missing: true
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  keepfiles: 3

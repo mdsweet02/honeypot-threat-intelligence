@@ -1,0 +1,34 @@
+title: Cryptominer Download or Execution in Honeypot Session
+id: 7b1e2a3c-4d5e-4f60-8a71-9b2c3d4e5f02
+status: experimental
+description: |
+  Commands referencing well-known miners (XMRig etc.) or mining-pool protocols.
+  Kibana KQL equivalent:
+    eventid:"cowrie.command.input" and (input:*xmrig* or input:*stratum+tcp* or input:*minerd* or input:*c3pool* or input:*moneroocean*)
+references:
+  - https://attack.mitre.org/techniques/T1496/
+author: Madina Zhakina
+date: 2026-11-08
+tags:
+  - attack.impact
+  - attack.t1496
+logsource:
+  product: cowrie
+  service: honeypot
+detection:
+  selection:
+    eventid: cowrie.command.input
+    input|contains:
+      - xmrig
+      - minerd
+      - cpuminer
+      - stratum+tcp
+      - c3pool
+      - moneroocean
+  condition: selection
+fields:
+  - src_ip
+  - input
+falsepositives:
+  - Unlikely
+level: high

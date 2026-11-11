@@ -1,0 +1,12 @@
+# Installed to /etc/cron.d/honeypot by install.sh. Times are UTC (droplet clock).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Health check every 10 minutes (container, disk, log freshness, services)
+*/10 * * * * root python3 /opt/honeypot/scripts/healthcheck.py >> /var/log/honeypot-health.log 2>&1
+
+# Daily digest at 08:00 UTC - change the hour to suit your timezone
+0 8 * * * root python3 /opt/honeypot/scripts/daily_digest.py >> /var/log/honeypot-digest.log 2>&1
+
+# Compress rotated Cowrie logs older than 2 days (Filebeat has shipped them by then)
+15 3 * * * root find /opt/honeypot/data/cowrie/log -name 'cowrie.json.*' ! -name '*.gz' -mtime +2 -exec gzip {} \;

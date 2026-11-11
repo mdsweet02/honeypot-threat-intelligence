@@ -1,0 +1,16 @@
+# Secrets
+.env
+*.key
+
+# Live honeypot data: logs, TTY recordings and LIVE MALWARE - never commit
+data/cowrie/
+data/live/
+*.zip
+
+# Generated working files (commit selected results manually, e.g. into report/)
+out/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
